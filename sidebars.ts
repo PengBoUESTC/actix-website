@@ -43,6 +43,9 @@ const sidebars: SidebarsConfig = {
         href: "https://docs.rs/actix-web/latest/actix_web/",
       },
     ],
+    "说明": [
+      "说明"
+    ]
   },
 };
 

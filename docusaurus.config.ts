@@ -39,12 +39,6 @@ const config: Config = {
           position: "left",
         },
         {
-          to: "community",
-          activeBasePath: "community",
-          label: "Community",
-          position: "left",
-        },
-        {
           to: "code",
           activeBasePath: "code",
           label: "Code",
