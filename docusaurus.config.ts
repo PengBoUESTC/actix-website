@@ -9,7 +9,7 @@ const config: Config = {
   title: "Actix Web",
   tagline:
     "Actix Web is a powerful, pragmatic, and extremely fast web framework for Rust",
-  url: "https://actix.rs",
+  url: "https://pengbouestc.github.io",
   baseUrl: "/actix-website",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
