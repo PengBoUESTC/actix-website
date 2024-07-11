@@ -1,14 +1,14 @@
 ---
-title: HTTP Server Initialization
+title: HTTP 服务器初始化
 ---
 
 import CodeBlock from "@site/src/components/code_block";
 import MermaidDiagram from "@site/src/components/mermaid_diagram";
 import http_server from '!!raw-loader!@site/static/img/diagrams/http_server.mmd';
 
-# Architecture overview
+# 架构概述
 
-Below is a diagram of HttpServer initialization, which happens on the following code
+下面是 HttpServer 初始化的图示，对应以下代码
 
 ```rust
 #[actix_web::main]

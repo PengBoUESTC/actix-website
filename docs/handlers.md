@@ -1,20 +1,20 @@
 ---
-title: Handlers
+title: 处理器
 ---
 
 import CodeBlock from "@site/src/components/code_block";
 
-# Request Handlers
+# 请求处理器
 
-A request handler is an async function that accepts zero or more parameters that can be extracted from a request (i.e., [_impl FromRequest_][implfromrequest]) and returns a type that can be converted into an HttpResponse (i.e., [_impl Responder_][respondertrait]).
+请求处理器是一个异步函数，它接受零个或多个可以从请求中提取的参数（即 [_impl FromRequest_][implfromrequest]），并返回一个可以转换为 HttpResponse 的类型（即 [_impl Responder_][respondertrait]）。
 
-Request handling happens in two stages. First the handler object is called, returning any object that implements the [_Responder_][respondertrait] trait. Then, `respond_to()` is called on the returned object, converting itself to a `HttpResponse` or `Error`.
+请求处理分为两个阶段。首先调用处理器对象，返回任何实现 [_Responder_][respondertrait] 特性的对象。然后，对返回的对象调用 `respond_to()`，将其转换为 `HttpResponse` 或 `Error`。
 
-By default Actix Web provides `Responder` implementations for some standard types, such as `&'static str`, `String`, etc.
+默认情况下，Actix Web 为一些标准类型提供了 `Responder` 实现，例如 `&'static str`、`String` 等。
 
-> For a complete list of implementations, check the [_Responder documentation_][responderimpls].
+> 有关实现的完整列表，请查看 [_Responder 文档_][responderimpls]。
 
-Examples of valid handlers:
+有效处理器的示例：
 
 ```rust
 async fn index(_req: HttpRequest) -> &'static str {
@@ -28,7 +28,7 @@ async fn index(_req: HttpRequest) -> String {
 }
 ```
 
-You can also change the signature to return `impl Responder` which works well if more complex types are involved.
+你也可以将签名更改为返回 `impl Responder`，这在涉及更复杂类型时效果很好。
 
 ```rust
 async fn index(_req: HttpRequest) -> impl Responder {
@@ -42,25 +42,25 @@ async fn index(req: HttpRequest) -> Box<Future<Item=HttpResponse, Error=Error>> 
 }
 ```
 
-## Response with custom type
+## 使用自定义类型响应
 
-To return a custom type directly from a handler function, the type needs to implement the `Responder` trait.
+要直接从处理器函数返回自定义类型，该类型需要实现 `Responder` 特性。
 
-Let's create a response for a custom type that serializes to an `application/json` response:
+让我们为一个序列化为 `application/json` 响应的自定义类型创建一个响应：
 
 <CodeBlock example="responder-trait" file="main.rs" section="responder-trait" />
 
-## Streaming response body
+## 流式响应体
 
-Response body can be generated asynchronously. In this case, body must implement the stream trait `Stream<Item = Result<Bytes, Error>>`, i.e.:
+响应体可以异步生成。在这种情况下，响应体必须实现流特性 `Stream<Item = Result<Bytes, Error>>`，即：
 
 <CodeBlock example="async-handlers" file="stream.rs" section="stream" />
 
-## Different return types (Either)
+## 不同的返回类型（Either）
 
-Sometimes, you need to return different types of responses. For example, you can error check and return errors, return async responses, or any result that requires two different types.
+有时，你需要返回不同类型的响应。例如，你可以进行错误检查并返回错误，返回异步响应，或任何需要两种不同类型结果的情况。
 
-For this case, the [Either][either] type can be used. `Either` allows combining two different responder types into a single type.
+对于这种情况，可以使用 [Either][either] 类型。`Either` 允许将两种不同的响应类型组合成一种类型。
 
 <CodeBlock example="either" file="main.rs" section="either" />
 

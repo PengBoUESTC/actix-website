@@ -1,64 +1,64 @@
 ---
-title: Server
+title: 服务器
 ---
 
 import RenderCodeBlock from '@theme/CodeBlock';
 import CodeBlock from '@site/src/components/code_block';
 import vars from "@site/vars";
 
-# The HTTP Server
+# HTTP 服务器
 
-The [**HttpServer**][httpserverstruct] type is responsible for serving HTTP requests.
+[**HttpServer**][httpserverstruct] 类型负责处理 HTTP 请求。
 
-`HttpServer` accepts an application factory as a parameter, and the application factory must have `Send` + `Sync` boundaries. More about that in the _multi-threading_ section.
+`HttpServer` 接受一个应用程序工厂作为参数，该工厂必须具有 `Send` + `Sync` 边界。更多内容请参见 _多线程_ 部分。
 
-To start the web server it must first be bound to a network socket. Use [`HttpServer::bind()`][bindmethod] with a socket address tuple or string such as `("127.0.0.1", 8080)` or `"0.0.0.0:8080"`. This will fail if the socket is being used by another application.
+要启动 Web 服务器，首先必须绑定到网络套接字。使用 [`HttpServer::bind()`][bindmethod] 绑定到一个套接字地址元组或字符串，例如 `("127.0.0.1", 8080)` 或 `"0.0.0.0:8080"`。如果套接字被其他应用程序使用，这将失败。
 
-After the `bind` is successful, use [`HttpServer::run()`][httpserver_run] to return a [`Server`][server] instance. The `Server` must be `await`ed or `spawn`ed to start processing requests and will run until it receives a shutdown signal (such as, by default, a `ctrl-c`; [read more here](#graceful-shutdown)).
+在 `bind` 成功后，使用 [`HttpServer::run()`][httpserver_run] 返回一个 [`Server`][server] 实例。`Server` 必须 `await` 或 `spawn` 才能开始处理请求，并将运行直到收到关闭信号（例如，默认情况下是 `ctrl-c`；[在这里阅读更多](#graceful-shutdown)）。
 
 <CodeBlock example="server" section="main" />
 
-## Multi-Threading
+## 多线程
 
-`HttpServer` automatically starts a number of HTTP _workers_, by default this number is equal to the number of physical CPUs in the system. This number can be overridden with the [`HttpServer::workers()`][workers] method.
+`HttpServer` 自动启动多个 HTTP _工作线程_，默认情况下，这个数量等于系统中的物理 CPU 数量。可以使用 [`HttpServer::workers()`][workers] 方法覆盖此数量。
 
 <CodeBlock example="server" file="workers.rs" section="workers" />
 
-Once the workers are created, they each receive a separate _application_ instance to handle requests. Application state is not shared between the threads, and handlers are free to manipulate their copy of the state with no concurrency concerns.
+一旦创建了工作线程，它们每个都会收到一个单独的 _应用程序_ 实例来处理请求。应用程序状态在线程之间不共享，处理程序可以自由地操作它们的状态副本而无需担心并发问题。
 
-Application state does not need to be `Send` or `Sync`, but application factories must be `Send` + `Sync`.
+应用程序状态不需要是 `Send` 或 `Sync`，但应用程序工厂必须是 `Send` + `Sync`。
 
-To share state between worker threads, use an `Arc`/`Data`. Special care should be taken once sharing and synchronization are introduced. In many cases, performance costs are inadvertently introduced as a result of locking the shared state for modifications.
+要在工作线程之间共享状态，请使用 `Arc`/`Data`。一旦引入共享和同步，需要特别注意。在许多情况下，由于锁定共享状态进行修改，性能成本会无意中增加。
 
-In some cases these costs can be alleviated using more efficient locking strategies, for example using [read/write locks](https://doc.rust-lang.org/std/sync/struct.RwLock.html) instead of [mutexes](https://doc.rust-lang.org/std/sync/struct.Mutex.html) to achieve non-exclusive locking, but the most performant implementations often tend to be ones in which no locking occurs at all.
+在某些情况下，可以使用更高效的锁定策略来缓解这些成本，例如使用 [读/写锁](https://doc.rust-lang.org/std/sync/struct.RwLock.html) 而不是 [互斥锁](https://doc.rust-lang.org/std/sync/struct.Mutex.html) 来实现非独占锁定，但最具性能的实现通常是完全不发生锁定的实现。
 
-Since each worker thread processes its requests sequentially, handlers which block the current thread will cause the current worker to stop processing new requests:
+由于每个工作线程按顺序处理其请求，阻塞当前线程的处理程序将导致当前工作线程停止处理新请求：
 
 ```rust
 fn my_handler() -> impl Responder {
-    std::thread::sleep(Duration::from_secs(5)); // <-- Bad practice! Will cause the current worker thread to hang!
+    std::thread::sleep(Duration::from_secs(5)); // <-- 不好的做法！会导致当前工作线程挂起！
     "response"
 }
 ```
 
-For this reason, any long, non-cpu-bound operation (e.g. I/O, database operations, etc.) should be expressed as futures or asynchronous functions. Async handlers get executed concurrently by worker threads and thus don't block execution:
+因此，任何长时间的、非 CPU 绑定的操作（例如 I/O、数据库操作等）都应表示为 futures 或异步函数。异步处理程序由工作线程并发执行，因此不会阻塞执行：
 
 ```rust
 async fn my_handler() -> impl Responder {
-    tokio::time::sleep(Duration::from_secs(5)).await; // <-- Ok. Worker thread will handle other requests here
+    tokio::time::sleep(Duration::from_secs(5)).await; // <-- 可以。工作线程将在此处处理其他请求
     "response"
 }
 ```
 
-The same limitation applies to extractors as well. When a handler function receives an argument which implements `FromRequest`, and that implementation blocks the current thread, the worker thread will block when running the handler. Special attention must be given when implementing extractors for this very reason, and they should also be implemented asynchronously where needed.
+同样的限制也适用于提取器。当处理程序函数接收一个实现了 `FromRequest` 的参数，并且该实现阻塞当前线程时，工作线程在运行处理程序时将被阻塞。由于这个原因，在实现提取器时需要特别注意，并且在需要时也应异步实现。
 
 ## TLS / HTTPS
 
-Actix Web supports two TLS implementations out-of-the-box: `rustls` and `openssl`.
+Actix Web 支持两种开箱即用的 TLS 实现：`rustls` 和 `openssl`。
 
-The `rustls` crate feature is for `rustls` integration and `openssl` is for `openssl` integration.
+`rustls` crate 特性用于 `rustls` 集成，`openssl` 用于 `openssl` 集成。
 
-<!-- DEPENDENCY -->
+<!-- 依赖 -->
 
 <RenderCodeBlock className="language-toml">
 {`[dependencies]
@@ -69,48 +69,48 @@ openssl = { version = "0.10" }
 
 <CodeBlock example="server" file="ssl.rs" section="ssl" />
 
-To create the key.pem and cert.pem use the command. **Fill in your own subject**
+要创建 key.pem 和 cert.pem，请使用以下命令。**填写你自己的主题**
 
 ```shell-session
 $ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem \
     -days 365 -sha256 -subj "/C=CN/ST=Fujian/L=Xiamen/O=TVlinux/OU=Org/CN=muro.lxd"
 ```
 
-To remove the password, then copy nopass.pem to key.pem
+要移除密码，然后将 nopass.pem 复制到 key.pem
 
 ```shell-session
 $ openssl rsa -in key.pem -out nopass.pem
 ```
 
-## Keep-Alive
+## 保持连接
 
-Actix Web keeps connections open to wait for subsequent requests.
+Actix Web 保持连接打开以等待后续请求。
 
-> _keep alive_ connection behavior is defined by server settings.
+> _保持连接_ 行为由服务器设置定义。
 
-- `Duration::from_secs(75)` or `KeepAlive::Timeout(75)`: enables 75 second keep-alive timer.
-- `KeepAlive::Os`: uses OS keep-alive.
-- `None` or `KeepAlive::Disabled`: disables keep-alive.
+- `Duration::from_secs(75)` 或 `KeepAlive::Timeout(75)`：启用 75 秒的保持连接计时器。
+- `KeepAlive::Os`：使用操作系统保持连接。
+- `None` 或 `KeepAlive::Disabled`：禁用保持连接。
 
 <CodeBlock example="server" file="keep_alive.rs" section="keep-alive" />
 
-If the first option above is selected, then keep-alive is enabled for HTTP/1.1 requests if the response does not explicitly disallow it by, for example, setting the [connection type][httpconnectiontype] to `Close` or `Upgrade`. Force closing a connection can be done with [the `force_close()` method on `HttpResponseBuilder`](https://docs.rs/actix-web/4/actix_web/struct.HttpResponseBuilder.html#method.force_close)
+如果选择了上述第一个选项，则在响应未明确禁止的情况下，保持连接将为 HTTP/1.1 请求启用，例如，通过设置 [连接类型][httpconnectiontype] 为 `Close` 或 `Upgrade`。可以使用 [`HttpResponseBuilder` 上的 `force_close()` 方法](https://docs.rs/actix-web/4/actix_web/struct.HttpResponseBuilder.html#method.force_close) 强制关闭连接。
 
-> Keep-alive is **off** for HTTP/1.0 and is **on** for HTTP/1.1 and HTTP/2.0.
+> 对于 HTTP/1.0，保持连接是 **关闭** 的，对于 HTTP/1.1 和 HTTP/2.0，保持连接是 **开启** 的。
 
 <CodeBlock example="server" file="keep_alive_tp.rs" section="example" />
 
-## Graceful shutdown
+## 优雅关闭
 
-`HttpServer` supports graceful shutdown. After receiving a stop signal, workers have a specific amount of time to finish serving requests. Any workers still alive after the timeout are force-dropped. By default the shutdown timeout is set to 30 seconds. You can change this parameter with the [`HttpServer::shutdown_timeout()`][shutdowntimeout] method.
+`HttpServer` 支持优雅关闭。在收到停止信号后，工作线程有特定的时间来完成请求处理。超时后仍然存活的工作线程将被强制删除。默认情况下，关闭超时设置为 30 秒。可以使用 [`HttpServer::shutdown_timeout()`][shutdowntimeout] 方法更改此参数。
 
-`HttpServer` handles several OS signals. _CTRL-C_ is available on all OSes, other signals are available on unix systems.
+`HttpServer` 处理多个操作系统信号。_CTRL-C_ 在所有操作系统上可用，其他信号在 Unix 系统上可用。
 
-- _SIGINT_ - Force shutdown workers
-- _SIGTERM_ - Graceful shutdown workers
-- _SIGQUIT_ - Force shutdown workers
+- _SIGINT_ - 强制关闭工作线程
+- _SIGTERM_ - 优雅关闭工作线程
+- _SIGQUIT_ - 强制关闭工作线程
 
-> It is possible to disable signal handling with [`HttpServer::disable_signals()`][disablesignals] method.
+> 可以使用 [`HttpServer::disable_signals()`][disablesignals] 方法禁用信号处理。
 
 [server]: https://docs.rs/actix-web/4/actix_web/dev/struct.Server.html
 [httpserverstruct]: https://docs.rs/actix-web/4/actix_web/struct.HttpServer.html

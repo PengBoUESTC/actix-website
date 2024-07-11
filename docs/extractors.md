@@ -1,84 +1,84 @@
 ---
-title: Extractors
+title: 提取器
 ---
 
 import CodeBlock from "@site/src/components/code_block";
 
-# Type-safe information extraction
+# 类型安全的信息提取
 
-Actix Web provides a facility for type-safe request information access called _extractors_ (i.e., `impl FromRequest`). There are lots of built-in extractor implementations (see [implementors](https://docs.rs/actix-web/latest/actix_web/trait.FromRequest.html#implementors)).
+Actix Web 提供了一种称为 _提取器_（即 `impl FromRequest`）的类型安全请求信息访问工具。有许多内置的提取器实现（参见 [实现者](https://docs.rs/actix-web/latest/actix_web/trait.FromRequest.html#implementors)）。
 
-An extractor can be accessed as an argument to a handler function. Actix Web supports up to 12 extractors per handler function. Argument position does not matter.
+提取器可以作为处理函数的参数进行访问。Actix Web 支持每个处理函数最多 12 个提取器。参数位置无关紧要。
 
 <CodeBlock example="extractors" file="main.rs" section="option-one" />
 
-## Path
+## 路径
 
-[_Path_][pathstruct] provides information that is extracted from the request's path. Parts of the path that are extractable are called "dynamic segments" and are marked with curly braces. You can deserialize any variable segment from the path.
+[_Path_][pathstruct] 提供从请求路径中提取的信息。路径中可提取的部分称为“动态段”，并用花括号标记。你可以从路径中反序列化任何变量段。
 
-For instance, for resource that registered for the `/users/{user_id}/{friend}` path, two segments could be deserialized, `user_id` and `friend`. These segments could be extracted as a tuple in the order they are declared (e.g., `Path<(u32, String)>`).
+例如，对于注册了 `/users/{user_id}/{friend}` 路径的资源，可以反序列化两个段，`user_id` 和 `friend`。这些段可以按声明的顺序作为元组提取（例如，`Path<(u32, String)>`）。
 
 <CodeBlock example="extractors" file="path_one.rs" section="path-one" />
 
-It is also possible to extract path information to a type that implements the `Deserialize` trait from `serde` by matching dynamic segment names with field names. Here is an equivalent example that uses a deserialization struct using `serde` (make sure to enable its `derive` feature) instead of a tuple type.
+还可以通过将动态段名称与字段名称匹配，将路径信息提取到实现了 `serde` 的 `Deserialize` 特性的类型中。以下是使用 `serde` 的反序列化结构（确保启用了其 `derive` 特性）而不是元组类型的等效示例。
 
 <CodeBlock example="extractors" file="path_two.rs" section="path-two" />
 
-As a non-type-safe alternative, it's also possible to query (see [`match_info` docs][docsrs_match_info]) the request for path parameters by name within a handler:
+作为一种非类型安全的替代方法，还可以在处理函数中按名称查询请求的路径参数（参见 [`match_info` 文档][docsrs_match_info]）：
 
 <CodeBlock example="extractors" file="path_three.rs" section="path-three" />
 
-## Query
+## 查询
 
-The [`Query<T>`][querystruct] type provides extraction functionality for the request's query parameters. Underneath it uses `serde_urlencoded` crate.
+[`Query<T>`][querystruct] 类型提供了请求查询参数的提取功能。其底层使用 `serde_urlencoded` crate。
 
 <CodeBlock example="extractors" file="query.rs" section="query" />
 
 ## JSON
 
-[`Json<T>`][jsonstruct] allows deserialization of a request body into a struct. To extract typed information from a request's body, the type `T` must implement `serde::Deserialize`.
+[`Json<T>`][jsonstruct] 允许将请求体反序列化为结构体。要从请求体中提取类型化信息，类型 `T` 必须实现 `serde::Deserialize`。
 
 <CodeBlock example="extractors" file="json_one.rs" section="json-one" />
 
-Some extractors provide a way to configure the extraction process. To configure an extractor, pass its configuration object to the resource's `.app_data()` method. In the case of _Json_ extractor it returns a [_JsonConfig_][jsonconfig]. You can configure the maximum size of the JSON payload as well as a custom error handler function.
+一些提取器提供了配置提取过程的方法。要配置提取器，将其配置对象传递给资源的 `.app_data()` 方法。在 _Json_ 提取器的情况下，它返回一个 [_JsonConfig_][jsonconfig]。你可以配置 JSON 负载的最大大小以及自定义错误处理函数。
 
-The following example limits the size of the payload to 4kb and uses a custom error handler.
+以下示例将负载大小限制为 4kb 并使用自定义错误处理程序。
 
 <CodeBlock example="extractors" file="json_two.rs" section="json-two" />
 
-## URL-Encoded Forms
+## URL 编码表单
 
-A URL-encoded form body can be extracted to a struct, much like `Json<T>`. This type must implement `serde::Deserialize`.
+URL 编码的表单体可以像 `Json<T>` 一样提取到结构体中。此类型必须实现 `serde::Deserialize`。
 
-[_FormConfig_][formconfig] allows configuring the extraction process.
+[_FormConfig_][formconfig] 允许配置提取过程。
 
 <CodeBlock example="extractors" file="form.rs" section="form" />
 
-## Other
+## 其他
 
-Actix Web also provides many other extractors, here's a few important ones:
+Actix Web 还提供了许多其他提取器，以下是一些重要的：
 
-- [`Data`][datastruct] - For accessing pieces of application state.
-- [`HttpRequest`][httprequest] - `HttpRequest` is itself an extractor, in case you need access to other parts of the request.
-- `String` - You can convert a request's payload to a `String`. [_An example_][stringexample] is available in the rustdoc.
-- [`Bytes`][bytes] - You can convert a request's payload into _Bytes_. [_An example_][bytesexample] is available in the rustdoc.
-- [`Payload`][payload] - Low-level payload extractor primarily for building other extractors. [_An example_][payloadexample] is available in the rustdoc.
+- [`Data`][datastruct] - 用于访问应用程序状态的部分。
+- [`HttpRequest`][httprequest] - `HttpRequest` 本身就是一个提取器，以防你需要访问请求的其他部分。
+- `String` - 你可以将请求的负载转换为 `String`。[_一个示例_][stringexample] 在 rustdoc 中可用。
+- [`Bytes`][bytes] - 你可以将请求的负载转换为 _Bytes_。[_一个示例_][bytesexample] 在 rustdoc 中可用。
+- [`Payload`][payload] - 主要用于构建其他提取器的低级负载提取器。[_一个示例_][payloadexample] 在 rustdoc 中可用。
 
-## Application State Extractor
+## 应用程序状态提取器
 
-Application state is accessible from the handler with the `web::Data` extractor; however, state is accessible as a read-only reference. If you need mutable access to state, it must be implemented.
+应用程序状态可以通过 `web::Data` 提取器从处理函数中访问；然而，状态只能作为只读引用访问。如果你需要对状态进行可变访问，则必须实现它。
 
-Here is an example of a handler that stores the number of processed requests:
+以下是一个存储处理请求数量的处理函数示例：
 
 <CodeBlock example="request-handlers" file="main.rs" section="data" />
 
-Although this handler will work, `data.count` will only count the number of requests handled _by each worker thread_. To count the number of total requests across all threads, one should use shared `Arc` and [atomics][atomics].
+尽管此处理函数可以工作，但 `data.count` 只会计算 _每个工作线程_ 处理的请求数量。要计算所有线程处理的总请求数，应使用共享的 `Arc` 和 [原子操作][atomics]。
 
 <CodeBlock example="request-handlers" file="handlers_arc.rs" section="arc" />
 
-**Note**: If you want the _entire_ state to be shared across all threads, use `web::Data` and `app_data` as described in [Shared Mutable State][shared_mutable_state].
+**注意**：如果你希望 _整个_ 状态在所有线程之间共享，请使用 `web::Data` 和 `app_data`，如 [共享可变状态][shared_mutable_state] 中所述。
 
-Be careful when using blocking synchronization primitives like `Mutex` or `RwLock` within your app state. Actix Web handles requests asynchronously. It is a problem if the [_critical section_][critical_section] in your handler is too big or contains an `.await` point. If this is a concern, we would advise you to also read [Tokio's advice on using blocking `Mutex` in async code][tokio_std_mutex].
+在应用程序状态中使用阻塞同步原语（如 `Mutex` 或 `RwLock`）时要小心。Actix Web 异步处理请求。如果处理函数中的 [_临界区_][critical_section] 太大或包含 `.await` 点，这将是一个问题。如果这是一个问题，我们建议你也阅读 [Tokio 关于在异步代码中使用阻塞 `Mutex` 的建议][tokio_std_mutex]。
 
 [pathstruct]: https://docs.rs/actix-web/4/actix_web/dev/struct.Path.html
 [querystruct]: https://docs.rs/actix-web/4/actix_web/web/struct.Query.html

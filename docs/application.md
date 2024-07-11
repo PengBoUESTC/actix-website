@@ -1,83 +1,83 @@
 ---
-title: Application
+title: 应用程序
 ---
 
 import CodeBlock from "@site/src/components/code_block";
 
-# Writing an Application
+# 编写应用程序
 
-`actix-web` provides various primitives to build web servers and applications with Rust. It provides routing, middleware, pre-processing of requests, post-processing of responses, etc.
+`actix-web` 提供了多种原语来使用 Rust 构建 Web 服务器和应用程序。它提供了路由、中间件、请求的预处理、响应的后处理等功能。
 
-All `actix-web` servers are built around the [`App`][app] instance. It is used for registering routes for resources and middleware. It also stores application state shared across all handlers within the same scope.
+所有的 `actix-web` 服务器都是围绕 [`App`][app] 实例构建的。它用于注册资源和中间件的路由。它还存储在同一作用域内所有处理程序共享的应用程序状态。
 
-An application's [`scope`][scope] acts as a namespace for all routes, i.e. all routes for a specific application scope have the same url path prefix. The application prefix always contains a leading "/" slash. If a supplied prefix does not contain leading slash, it is automatically inserted. The prefix should consist of value path segments.
+应用程序的 [`scope`][scope] 充当所有路由的命名空间，即特定应用程序作用域的所有路由具有相同的 URL 路径前缀。应用程序前缀总是包含一个前导的 "/" 斜杠。如果提供的前缀不包含前导斜杠，则会自动插入。前缀应由值路径段组成。
 
-> For an application with scope `/app`, any request with the paths `/app`, `/app/`, or `/app/test` would match; however, the path `/application` would not match.
+> 对于作用域为 `/app` 的应用程序，任何带有路径 `/app`、`/app/` 或 `/app/test` 的请求都会匹配；然而，路径 `/application` 不会匹配。
 
 <CodeBlock example="application" file="app.rs" section="setup" />
 
-In this example, an application with the `/app` prefix and an `index.html` resource is created. This resource is available through the `/app/index.html` url.
+在这个例子中，创建了一个带有 `/app` 前缀和 `index.html` 资源的应用程序。该资源可以通过 `/app/index.html` URL 访问。
 
-> For more information, check the [URL Dispatch][usingappprefix] section.
+> 更多信息，请查看 [URL Dispatch][usingappprefix] 部分。
 
-## State
+## 状态
 
-Application state is shared with all routes and resources within the same scope. State can be accessed with the [`web::Data<T>`][data] extractor where `T` is the type of the state. State is also accessible for middleware.
+应用程序状态在同一作用域内的所有路由和资源中共享。状态可以通过 [`web::Data<T>`][data] 提取器访问，其中 `T` 是状态的类型。状态也可以在中间件中访问。
 
-Let's write a simple application and store the application name in the state:
+让我们编写一个简单的应用程序并将应用程序名称存储在状态中：
 
 <CodeBlock example="application" file="state.rs" section="setup" />
 
-Next, pass in the state when initializing the App and start the application:
+接下来，在初始化 App 时传入状态并启动应用程序：
 
 <CodeBlock example="application" file="state.rs" section="start_app" />
 
-Any number of state types could be registered within the application.
+可以在应用程序中注册任意数量的状态类型。
 
-## Shared Mutable State
+## 共享可变状态
 
-`HttpServer` accepts an application factory rather than an application instance. An `HttpServer` constructs an application instance for each thread. Therefore, application data must be constructed multiple times. If you want to share data between different threads, a shareable object should be used, e.g. `Send` + `Sync`.
+`HttpServer` 接受一个应用程序工厂而不是一个应用程序实例。`HttpServer` 为每个线程构建一个应用程序实例。因此，应用程序数据必须多次构建。如果你想在不同线程之间共享数据，应该使用一个可共享的对象，例如 `Send` + `Sync`。
 
-Internally, [`web::Data`][data] uses `Arc`. So in order to avoid creating two `Arc`s, we should create our Data before registering it using [`App::app_data()`][appdata].
+在内部，[`web::Data`][data] 使用 `Arc`。因此，为了避免创建两个 `Arc`，我们应该在注册之前创建我们的数据，使用 [`App::app_data()`][appdata]。
 
-In the following example, we will write an application with mutable, shared state. First, we define our state and create our handler:
+在以下示例中，我们将编写一个具有可变共享状态的应用程序。首先，我们定义我们的状态并创建我们的处理程序：
 
 <CodeBlock example="application" file="mutable_state.rs" section="setup_mutable" />
 
-and register the data in an `App`:
+并在 `App` 中注册数据：
 
 <CodeBlock example="application" file="mutable_state.rs" section="make_app_mutable" />
 
-Key takeaways:
+关键要点：
 
-- State initialized _inside_ the closure passed to `HttpServer::new` is local to the worker thread and may become de-synced if modified.
-- To achieve _globally shared state_, it must be created **outside** of the closure passed to `HttpServer::new` and moved/cloned in.
+- 在传递给 `HttpServer::new` 的闭包内初始化的状态是工作线程本地的，如果修改可能会变得不同步。
+- 要实现全局共享状态，必须在传递给 `HttpServer::new` 的闭包外部创建，并移动/克隆进去。
 
-## Using an Application Scope to Compose Applications
+## 使用应用程序作用域来组合应用程序
 
-The [`web::scope()`][webscope] method allows setting a resource group prefix. This scope represents a resource prefix that will be prepended to all resource patterns added by the resource configuration. This can be used to help mount a set of routes at a different location than the original author intended while still maintaining the same resource names.
+[`web::scope()`][webscope] 方法允许设置资源组前缀。此作用域表示一个资源前缀，该前缀将被预先添加到资源配置添加的所有资源模式中。这可以用于帮助在与原作者预期不同的位置挂载一组路由，同时仍保持相同的资源名称。
 
-For example:
+例如：
 
 <CodeBlock example="application" file="scope.rs" section="scope" />
 
-In the above example, the `show_users` route will have an effective route pattern of `/users/show` instead of `/show` because the application's scope argument will be prepended to the pattern. The route will then only match if the URL path is `/users/show`, and when the [`HttpRequest.url_for()`][urlfor] function is called with the route name `show_users`, it will generate a URL with that same path.
+在上面的示例中，`show_users` 路由将具有 `/users/show` 的有效路由模式，而不是 `/show`，因为应用程序的作用域参数将被预先添加到模式中。然后，路由仅在 URL 路径为 `/users/show` 时匹配，并且当使用路由名称 `show_users` 调用 [`HttpRequest.url_for()`][urlfor] 函数时，它将生成具有相同路径的 URL。
 
-## Application guards and virtual hosting
+## 应用程序守卫和虚拟主机
 
-You can think of a guard as a simple function that accepts a _request_ object reference and returns _true_ or _false_. Formally, a guard is any object that implements the [`Guard`][guardtrait] trait. Actix Web provides several guards. You can check the [functions section][guardfuncs] of the API docs.
+你可以将守卫视为一个简单的函数，它接受一个请求对象引用并返回 true 或 false。正式地，守卫是任何实现 [`Guard`][guardtrait] 特性的对象。Actix Web 提供了几种守卫。你可以查看 API 文档的 [functions section][guardfuncs]。
 
-One of the provided guards is [`Host`][guardhost]. It can be used as a filter based on request header information.
+提供的守卫之一是 [`Host`][guardhost]。它可以用作基于请求头信息的过滤器。
 
 <CodeBlock example="application" file="vh.rs" section="vh" />
 
-## Configure
+## 配置
 
-For simplicity and reusability both [`App`][appconfig] and [`web::Scope`][webscopeconfig] provide the `configure` method. This function is useful for moving parts of the configuration to a different module or even library. For example, some of the resource's configuration could be moved to a different module.
+为了简化和重用，[`App`][appconfig] 和 [`web::Scope`][webscopeconfig] 都提供了 `configure` 方法。此函数对于将部分配置移动到不同的模块甚至库中非常有用。例如，某些资源的配置可以移动到不同的模块中。
 
 <CodeBlock example="application" file="config.rs" section="config" />
 
-The result of the above example would be:
+上述示例的结果将是：
 
 ```
 /         -> "/"
@@ -85,9 +85,9 @@ The result of the above example would be:
 /api/test -> "test"
 ```
 
-Each [`ServiceConfig`][serviceconfig] can have its own `data`, `routes`, and `services`.
+每个 [`ServiceConfig`][serviceconfig] 可以有自己的 `data`、`routes` 和 `services`。
 
-<!-- LINKS -->
+<!-- 链接 -->
 
 [usingappprefix]: /docs/url-dispatch#using-an-application-prefix-to-compose-applications
 [stateexample]: https://github.com/actix/examples/blob/master/basics/state/src/main.rs

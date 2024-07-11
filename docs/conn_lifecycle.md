@@ -1,5 +1,5 @@
 ---
-title: Connection Lifecycle
+title: 连接生命周期
 ---
 
 import MermaidDiagram from "@site/src/components/mermaid_diagram";
@@ -8,33 +8,33 @@ import connection_accept from '!!raw-loader!@site/static/img/diagrams/connection
 import connection_worker from '!!raw-loader!@site/static/img/diagrams/connection_worker.mmd';
 import connection_request from '!!raw-loader!@site/static/img/diagrams/connection_request.mmd';
 
-# Architecture overview
+# 架构概述
 
-After Server has started listening to all sockets, [`Accept`][accept] and [`Worker`][worker] are two main loops responsible for processing incoming client connections.
+在服务器开始监听所有套接字后，[`Accept`][accept] 和 [`Worker`][worker] 是负责处理传入客户端连接的两个主要循环。
 
-Once connection accepted Application level protocol processing happens in a protocol specific [`Dispatcher`][dispatcher] loop spawned from [`Worker`][worker].
+一旦连接被接受，应用层协议处理将在从 [`Worker`][worker] 派生的特定协议 [`Dispatcher`][dispatcher] 循环中进行。
 
-    Please note, below diagrams are outlining happy-path scenarios only.
+    请注意，以下图表仅概述了顺利的路径场景。
 
 <MermaidDiagram value={connection_overview}  />
 
-## Accept loop in more detail
+## 更详细的接受循环
 
 <MermaidDiagram value={connection_accept}  />
 
-Most of code implementation resides in [`actix-server`][server] crate for struct [`Accept`][accept].
+大部分代码实现位于 [`actix-server`][server] crate 中的 [`Accept`][accept] 结构体。
 
-## Worker loop in more detail
+## 更详细的工作循环
 
 <MermaidDiagram value={connection_worker}  />
 
-Most of code implementation resides in [`actix-server`][server] crate for struct [`Worker`][worker].
+大部分代码实现位于 [`actix-server`][server] crate 中的 [`Worker`][worker] 结构体。
 
-## Request loop roughly
+## 请求循环概述
 
 <MermaidDiagram value={connection_request}  />
 
-Most of code implementation for request loop resides in [`actix-web`][web] and [`actix-http`][http] crates.
+请求循环的大部分代码实现位于 [`actix-web`][web] 和 [`actix-http`][http] crates 中。
 
 [server]: https://crates.io/crates/actix-server
 [web]: https://crates.io/crates/actix-web

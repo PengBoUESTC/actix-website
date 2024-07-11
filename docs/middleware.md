@@ -1,45 +1,45 @@
 ---
-title: Middleware
+title: 中间件
 ---
 
 import CodeBlock from "@site/src/components/code_block";
 
-# Middleware
+# 中间件
 
-Actix Web's middleware system allows us to add additional behavior to request/response processing. Middleware can hook into an incoming request process, enabling us to modify requests as well as halt request processing to return a response early.
+Actix Web 的中间件系统允许我们在请求/响应处理过程中添加额外的行为。中间件可以挂钩到传入的请求过程中，使我们能够修改请求以及提前返回响应以停止请求处理。
 
-Middleware can also hook into response processing.
+中间件也可以挂钩到响应处理过程中。
 
-Typically, middleware is involved in the following actions:
+通常，中间件涉及以下操作：
 
-- Pre-process the Request
-- Post-process a Response
-- Modify application state
-- Access external services (redis, logging, sessions)
+- 预处理请求
+- 后处理响应
+- 修改应用程序状态
+- 访问外部服务（如 Redis、日志记录、会话）
 
-Middleware is registered for each `App`, `scope`, or `Resource` and executed in opposite order as registration. In general, a _middleware_ is a type that implements the [_Service trait_][servicetrait] and [_Transform trait_][transformtrait]. Each method in the traits has a default implementation. Each method can return a result immediately or a _future_ object.
+中间件为每个 `App`、`scope` 或 `Resource` 注册，并按照注册的相反顺序执行。一般来说，中间件是一种实现了 [_Service trait_][servicetrait] 和 [_Transform trait_][transformtrait] 的类型。traits 中的每个方法都有默认实现。每个方法可以立即返回结果或返回一个 _future_ 对象。
 
-The following demonstrates creating a simple middleware:
+以下演示了创建一个简单的中间件：
 
 <CodeBlock example="middleware" file="main.rs" section="simple" />
 
-Alternatively, for simple use cases, you can use [_wrap_fn_][wrap_fn] to create small, ad-hoc middleware:
+或者，对于简单的用例，你可以使用 [_wrap_fn_][wrap_fn] 来创建小型的临时中间件：
 
 <CodeBlock example="middleware" file="wrap_fn.rs" section="wrap-fn" />
 
-> Actix Web provides several useful middleware, such as _logging_, _user sessions_, _compress_, etc.
+> Actix Web 提供了几个有用的中间件，例如 _logging_、_user sessions_、_compress_ 等。
 
-**Warning: if you use `wrap()` or `wrap_fn()` multiple times, the last occurrence will be executed first.**
+**警告：如果你多次使用 `wrap()` 或 `wrap_fn()`，最后一次出现的将首先执行。**
 
-## Logging
+## 日志记录
 
-Logging is implemented as a middleware. It is common to register a logging middleware as the first middleware for the application. Logging middleware must be registered for each application.
+日志记录作为中间件实现。通常将日志记录中间件注册为应用程序的第一个中间件。每个应用程序都必须注册日志记录中间件。
 
-The `Logger` middleware uses the standard log crate to log information. You should enable logger for _actix_web_ package to see access log ([env_logger][envlogger] or similar).
+`Logger` 中间件使用标准的 log crate 来记录信息。你应该为 _actix_web_ 包启用日志记录以查看访问日志（[env_logger][envlogger] 或类似的）。
 
-### Usage
+### 用法
 
-Create `Logger` middleware with the specified `format`. Default `Logger` can be created with `default` method, it uses the default format:
+使用指定的 `format` 创建 `Logger` 中间件。可以使用 `default` 方法创建默认的 `Logger`，它使用默认格式：
 
 ```ignore
   %a %t "%r" %s %b "%{Referer}i" "%{User-Agent}i" %T
@@ -47,59 +47,59 @@ Create `Logger` middleware with the specified `format`. Default `Logger` can be 
 
 <CodeBlock example="middleware" file="logger.rs" section="logger" />
 
-The following is an example of the default logging format:
+以下是默认日志格式的示例：
 
 ```log
 INFO:actix_web::middleware::logger: 127.0.0.1:59934 [02/Dec/2017:00:21:43 -0800] "GET / HTTP/1.1" 302 0 "-" "curl/7.54.0" 0.000397
 INFO:actix_web::middleware::logger: 127.0.0.1:59947 [02/Dec/2017:00:22:40 -0800] "GET /index.html HTTP/1.1" 200 0 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:57.0) Gecko/20100101 Firefox/57.0" 0.000646
 ```
 
-### Format
+### 格式
 
-- `%%` The percent sign
-- `%a` Remote IP-address (IP-address of proxy if using reverse proxy)
-- `%t` Time when the request was started to process
-- `%P` The process ID of the child that serviced the request
-- `%r` First line of request
-- `%s` Response status code
-- `%b` Size of response in bytes, including HTTP headers
-- `%T` Time taken to serve the request, in seconds with floating fraction in .06f format
-- `%D` Time taken to serve the request, in milliseconds
+- `%%` 百分号
+- `%a` 远程 IP 地址（如果使用反向代理，则为代理的 IP 地址）
+- `%t` 请求开始处理的时间
+- `%P` 服务请求的子进程的进程 ID
+- `%r` 请求的第一行
+- `%s` 响应状态码
+- `%b` 响应的大小（字节），包括 HTTP 头
+- `%T` 服务请求所花费的时间，以秒为单位，浮点数格式为 .06f
+- `%D` 服务请求所花费的时间，以毫秒为单位
 - `%{FOO}i` request.headers['FOO']
 - `%{FOO}o` response.headers['FOO']
 - `%{FOO}e` os.environ['FOO']
 
-## Default headers
+## 默认头
 
-To set default response headers, the `DefaultHeaders` middleware can be used. The _DefaultHeaders_ middleware does not set the header if response headers already contain a specified header.
+要设置默认的响应头，可以使用 `DefaultHeaders` 中间件。如果响应头已经包含指定的头，则 _DefaultHeaders_ 中间件不会设置该头。
 
 <CodeBlock example="middleware" file="default_headers.rs" section="default-headers" />
 
-## User sessions
+## 用户会话
 
-Actix Web provides a general solution for session management. The [**actix-session**][actixsession] middleware can use multiple backend types to store session data.
+Actix Web 提供了一个通用的会话管理解决方案。[**actix-session**][actixsession] 中间件可以使用多种后端类型来存储会话数据。
 
-> By default, only cookie session backend is implemented. Other backend implementations can be added.
+> 默认情况下，仅实现了 cookie 会话后端。可以添加其他后端实现。
 
-[**CookieSession**][cookiesession] uses cookies as session storage. `CookieSessionBackend` creates sessions which are limited to storing fewer than 4000 bytes of data, as the payload must fit into a single cookie. An internal server error is generated if a session contains more than 4000 bytes.
+[**CookieSession**][cookiesession] 使用 cookie 作为会话存储。`CookieSessionBackend` 创建的会话限制为存储少于 4000 字节的数据，因为负载必须适合一个 cookie。如果会话包含超过 4000 字节的数据，则会生成内部服务器错误。
 
-A cookie may have a security policy of _signed_ or _private_. Each has a respective `CookieSession` constructor.
+cookie 可能具有 _signed_ 或 _private_ 的安全策略。每种策略都有相应的 `CookieSession` 构造函数。
 
-A _signed_ cookie may be viewed but not modified by the client. A _private_ cookie may neither be viewed nor modified by the client.
+_signed_ cookie 可以被查看但不能被客户端修改。_private_ cookie 既不能被查看也不能被客户端修改。
 
-The constructors take a key as an argument. This is the private key for cookie session - when this value is changed, all session data is lost.
+构造函数接受一个密钥作为参数。这是 cookie 会话的私钥——当此值更改时，所有会话数据都会丢失。
 
-In general, you create a `SessionStorage` middleware and initialize it with specific backend implementation, such as a `CookieSession`. To access session data the [`Session`][requestsession] extractor must be used. This method returns a [_Session_][sessionobj] object, which allows us to get or set session data.
+通常，你会创建一个 `SessionStorage` 中间件并使用特定的后端实现（如 `CookieSession`）进行初始化。要访问会话数据，必须使用 [`Session`][requestsession] 提取器。此方法返回一个 [_Session_][sessionobj] 对象，使我们能够获取或设置会话数据。
 
-> `actix_session::storage::CookieSessionStore` is available on the crate feature "cookie-session".
+> `actix_session::storage::CookieSessionStore` 在 crate 特性 "cookie-session" 上可用。
 
 <CodeBlock example="middleware" file="user_sessions.rs" section="user-session" />
 
-## Error handlers
+## 错误处理程序
 
-`ErrorHandlers` middleware allows us to provide custom handlers for responses.
+`ErrorHandlers` 中间件允许我们为响应提供自定义处理程序。
 
-You can use the `ErrorHandlers::handler()` method to register a custom error handler for a specific status code. You can modify an existing response or create a completly new one. The error handler can return a response immediately or return a future that resolves into a response.
+你可以使用 `ErrorHandlers::handler()` 方法为特定状态码注册自定义错误处理程序。你可以修改现有的响应或创建一个全新的响应。错误处理程序可以立即返回响应或返回一个解析为响应的 future。
 
 <CodeBlock example="middleware" file="errorhandler.rs" section="error-handler" />
 

@@ -1,42 +1,42 @@
 ---
-title: Static Files
+title: 静态文件
 ---
 
 import CodeBlock from "@site/src/components/code_block";
 
-# Individual file
+# 单个文件
 
-It is possible to serve static files with a custom path pattern and `NamedFile`. To match a path tail, we can use a `[.*]` regex.
+可以使用自定义路径模式和 `NamedFile` 来提供静态文件。要匹配路径尾部，我们可以使用 `[.*]` 正则表达式。
 
 <CodeBlock example="static-files" file="main.rs" section="individual-file" />
 
 :::warning
-Matching a path tail with the `[.*]` regex and using it to return a `NamedFile` has serious security implications. It offers the possibility for an attacker to insert `../` into the URL and access every file on the host that the user running the server has access to.
+使用 `[.*]` 正则表达式匹配路径尾部并返回 `NamedFile` 有严重的安全隐患。它可能允许攻击者在 URL 中插入 `../`，从而访问服务器用户有权限访问的所有主机文件。
 :::
 
-## Directory
+## 目录
 
-To serve files from specific directories and sub-directories, [`Files`][files] can be used. `Files` must be registered with an `App::service()` method, otherwise it will be unable to serve sub-paths.
+要从特定目录和子目录提供文件，可以使用 [`Files`][files]。`Files` 必须通过 `App::service()` 方法注册，否则将无法提供子路径服务。
 
 <CodeBlock example="static-files" file="directory.rs" section="directory" />
 
-By default files listing for sub-directories is disabled. Attempt to load directory listing will return _404 Not Found_ response. To enable files listing, use [`Files::show_files_listing()`][showfileslisting] method.
+默认情况下，子目录的文件列表是禁用的。尝试加载目录列表将返回 _404 Not Found_ 响应。要启用文件列表，请使用 [`Files::show_files_listing()`][showfileslisting] 方法。
 
-Instead of showing files listing for a directory, it is possible to redirect to a specific index file. Use the [`Files::index_file()`][indexfile] method to configure this redirect.
+除了显示目录的文件列表，还可以重定向到特定的索引文件。使用 [`Files::index_file()`][indexfile] 方法配置此重定向。
 
-## Configuration
+## 配置
 
-`NamedFiles` can specify various options for serving files:
+`NamedFiles` 可以指定各种选项来提供文件：
 
-- `set_content_disposition` - function to be used for mapping file's mime to corresponding `Content-Disposition` type
-- `use_etag` - specifies whether `ETag` shall be calculated and included in headers.
-- `use_last_modified` - specifies whether file modified timestamp should be used and added to `Last-Modified` header.
+- `set_content_disposition` - 用于将文件的 mime 映射到相应 `Content-Disposition` 类型的函数
+- `use_etag` - 指定是否应计算并包含 `ETag` 在头信息中。
+- `use_last_modified` - 指定是否应使用文件修改时间戳并添加到 `Last-Modified` 头信息中。
 
-All of the above methods are optional and provided with the best defaults, But it is possible to customize any of them.
+以上所有方法都是可选的，并提供了最佳默认值，但可以自定义其中的任何一个。
 
 <CodeBlock example="static-files" file="configuration.rs" section="config-one" />
 
-The Configuration can also be applied to directory service:
+配置也可以应用于目录服务：
 
 <CodeBlock example="static-files" file="configuration_two.rs" section="config-two" />
 

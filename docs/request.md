@@ -1,23 +1,23 @@
 ---
-title: Requests
+title: 请求
 ---
 
 import CodeBlock from "@site/src/components/code_block";
 
-# JSON Request
+# JSON 请求
 
-There are several options for json body deserialization.
+有几种选项可以用于 JSON 请求体的反序列化。
 
-The first option is to use _Json_ extractor. First, you define a handler function that accepts `Json<T>` as a parameter, then, you use the `.to()` method for registering this handler. It is also possible to accept arbitrary valid json object by using `serde_json::Value` as a type `T`.
+第一种选项是使用 _Json_ 提取器。首先，你定义一个接受 `Json<T>` 作为参数的处理函数，然后使用 `.to()` 方法注册这个处理函数。也可以通过使用 `serde_json::Value` 作为类型 `T` 来接受任意有效的 JSON 对象。
 
-First example of json of `JSON Request` depends on `serde`:
+第一个 `JSON 请求` 的示例依赖于 `serde`：
 
 ```toml
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 ```
 
-Second example of `JSON Request` depends on `serde` and `serde_json` and `futures`:
+第二个 `JSON 请求` 的示例依赖于 `serde`、`serde_json` 和 `futures`：
 
 ```toml
 [dependencies]
@@ -26,57 +26,57 @@ serde_json = "1"
 futures = "0.3"
 ```
 
-If you want to add default value for a field, refer to `serde`'s [documentation](https://serde.rs/attr-default.html).
+如果你想为字段添加默认值，请参考 `serde` 的[文档](https://serde.rs/attr-default.html)。
 
 <CodeBlock example="requests" file="main.rs" section="json-request" />
 
-You may also manually load the payload into memory and then deserialize it.
+你也可以手动将负载加载到内存中，然后进行反序列化。
 
-In the following example, we will deserialize a _MyObj_ struct. We need to load the request body first and then deserialize the json into an object.
+在以下示例中，我们将反序列化一个 _MyObj_ 结构体。我们需要先加载请求体，然后将 JSON 反序列化为一个对象。
 
 <CodeBlock example="requests" file="manual.rs" section="json-manual" />
 
-> A complete example for both options is available in [examples directory][examples].
+> 两种选项的完整示例可在[示例目录][examples]中找到。
 
-## Content Encoding
+## 内容编码
 
-Actix Web automatically _decompresses_ payloads. The following codecs are supported:
+Actix Web 自动解压负载。支持以下编解码器：
 
 - Brotli
 - Gzip
 - Deflate
 - Zstd
 
-If request headers contain a `Content-Encoding` header, the request payload is decompressed according to the header value. Multiple codecs are not supported, i.e: `Content-Encoding: br, gzip`.
+如果请求头包含 `Content-Encoding` 头，则根据头的值解压请求负载。不支持多种编解码器，即：`Content-Encoding: br, gzip`。
 
-## Chunked transfer encoding
+## 分块传输编码
 
-Actix automatically decodes _chunked_ encoding. The [`web::Payload`][payloadextractor] extractor already contains the decoded byte stream. If the request payload is compressed with one of the supported compression codecs (br, gzip, deflate), then the byte stream is decompressed.
+Actix 自动解码 _chunked_ 编码。[`web::Payload`][payloadextractor] 提取器已经包含了解码后的字节流。如果请求负载使用支持的压缩编解码器（br、gzip、deflate）进行压缩，则字节流会被解压。
 
-## Multipart body
+## 多部分体
 
-Actix Web provides multipart stream support with an external crate, [`actix-multipart`][multipartcrate].
+Actix Web 提供了一个外部 crate [`actix-multipart`][multipartcrate] 来支持多部分流。
 
-> A full example is available in the [examples directory][multipartexample].
+> 完整示例可在[示例目录][multipartexample]中找到。
 
-## Urlencoded body
+## Urlencoded 请求体
 
-Actix Web provides support for _application/x-www-form-urlencoded_ encoded bodies with the [`web::Form`][formencoded] extractor which resolves to the deserialized instance. The type of the instance must implement the `Deserialize` trait from _serde_.
+Actix Web 提供了对 _application/x-www-form-urlencoded_ 编码请求体的支持，使用 [`web::Form`][formencoded] 提取器，该提取器解析为反序列化实例。实例的类型必须实现 _serde_ 的 `Deserialize` 特性。
 
-The _UrlEncoded_ future can resolve into an error in several cases:
+_UrlEncoded_ future 在以下几种情况下可能会解析为错误：
 
-- content type is not `application/x-www-form-urlencoded`
-- transfer encoding is `chunked`.
-- content-length is greater than 256k
-- payload terminates with error.
+- 内容类型不是 `application/x-www-form-urlencoded`
+- 传输编码是 `chunked`
+- 内容长度大于 256k
+- 负载终止时出错
 
 <CodeBlock example="requests" file="urlencoded.rs" section="urlencoded" />
 
-## Streaming request
+## 流式请求
 
-_HttpRequest_ is a stream of `Bytes` objects. It can be used to read the request body payload.
+_HttpRequest_ 是一个 `Bytes` 对象的流。它可以用来读取请求体负载。
 
-In the following example, we read and print the request payload chunk by chunk:
+在以下示例中，我们逐块读取并打印请求负载：
 
 <CodeBlock example="requests" file="streaming.rs" section="streaming" />
 
